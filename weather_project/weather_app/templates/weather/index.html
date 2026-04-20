@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Dashboard</title>
+    <style>
+        /* Global reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Main container styling */
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        /* Page heading styles */
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Filter section styling */
+        .filter {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* City dropdown select styling */
+        .filter select {
+            padding: 8px 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 200px;
+        }
+
+        /* City card component styling */
+        .city-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* City card heading styles */
+        .city-card h2 {
+            color: #3498db;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Weather list styling */
+        .weather-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        /* Individual weather item styling */
+        .weather-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Remove border from last weather item */
+        .weather-item:last-child {
+            border-bottom: none;
+        }
+
+        /* No data placeholder styling */
+        .no-data {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather Dashboard</h1>
+        
+        <!-- City filter dropdown section -->
+        <div class="filter">
+            <select id="city-select">
+                <option value="">All Cities</option>
+                <!-- City options will be loaded dynamically here -->
+            </select>
+        </div>
+
+        <!-- Weather data display container -->
+        <div id="weather-container">
+            <!-- Weather data will be rendered dynamically here -->
+        </div>
+    </div>
+
+    <script>
+        // Global DOM element references
+        const citySelect = document.getElementById('city-select');
+        const weatherContainer = document.getElementById('weather-container');
+        
+        /**
+         * Initializes the page by loading cities and weather data
+         * Runs on page load to set up the dashboard
+         */
+        async function init() {
+            await loadCities(); // Load city list first
+            await loadWeatherData(); // Load default weather data
+        }
+
+        /**
+         * Fetches city data from API and populates the dropdown menu
+         * @returns {Promise<void>}
+         */
+        async function loadCities() {
+            try {
+                // Fetch cities from the API endpoint
+                const response = await fetch('/api/cities/');
+                const cities = await response.json();
+                
+                // Populate dropdown with city options
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.id;
+                    option.textContent = `${city.name} (${city.country})`;
+                    citySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load cities:', error);
+            }
+        }
+
+        /**
+         * Fetches weather data from API (filtered by city if specified)
+         * @param {string} cityId - Optional city ID to filter weather data
+         * @returns {Promise<void>}
+         */
+        async function loadWeatherData(cityId = '') {
+            try {
+                // Build API URL with optional city filter parameter
+                const url = `/api/front/data/${cityId ? `?city_id=${cityId}` : ''}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Render the fetched weather data to the page
+                renderWeatherData(data);
+            } catch (error) {
+                console.error('Failed to load weather data:', error);
+                weatherContainer.innerHTML = '<div class="no-data">Failed to load weather data</div>';
+            }
+        }
+
+        /**
+         * Renders weather data to the DOM
+         * @param {Array} data - Array of city weather objects to display
+         */
+        function renderWeatherData(data) {
+            // Show no data message if empty
+            if (data.length === 0) {
+                weatherContainer.innerHTML = '<div class="no-data">No weather data available</div>';
+                return;
+            }
+
+            // Build HTML for weather cards
+            let html = '';
+            data.forEach(city => {
+                html += `
+                    <div class="city-card">
+                        <h2>${city.city_name} (${city.country})</h2>
+                        ${city.weathers.length > 0 ? `
+                            <ul class="weather-list">
+                                ${city.weathers.map(weather => `
+                                    <li class="weather-item">
+                                        <span>${weather.date}</span>
+                                        <span>${weather.temperature}°C</span>
+                                        <span>${weather.description}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        ` : '<div class="no-data">No weather records for this city</div>'}
+                    </div>
+                `;
+            });
+            
+            // Insert rendered HTML into container
+            weatherContainer.innerHTML = html;
+        }
+
+        /**
+         * Event listener for city dropdown changes
+         * Triggers weather data reload with selected city filter
+         */
+        citySelect.addEventListener('change', (e) => {
+            loadWeatherData(e.target.value);
+        });
+
+        // Initialize the dashboard when page loads
+        init();
+    </script>
+</body>
+</html>

@@ -19,8 +19,8 @@ from django.urls import path, include
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
+from weather_app.views import front_index  
 
-# Swagger API documentation configuration
 schema_view = get_schema_view(
     openapi.Info(
         title="Simple Weather API",
@@ -31,10 +31,9 @@ schema_view = get_schema_view(
     permission_classes=[permissions.AllowAny],
 )
 
-# Main project URL patterns
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('weather_app.urls')),
-    # Swagger UI for API testing
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
+    path('', front_index, name='front_index'), 
 ]
